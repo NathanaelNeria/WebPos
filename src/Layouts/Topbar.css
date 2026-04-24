@@ -1,0 +1,24 @@
+/* Jika tidak menggunakan Tailwind, tambahkan ini di file CSS */
+.topbar {
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+/* Animasi untuk dropdown */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-animate {
+  animation: fadeIn 0.2s ease-out;
+}

@@ -1,0 +1,377 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+/* =========================================================
+   🟦  GLOBAL BASE STYLE
+========================================================= */
+body {
+  background-color: #f5f6fa;
+  font-family: "Poppins", sans-serif;
+  color: #000b42;
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+input::placeholder {
+  color: #a0a7c1;
+  font-size: 0.85rem;
+}
+input:focus {
+  outline: none;
+}
+
+/* =========================================================
+   🟩  CARD - DASHBOARD SUMMARY
+========================================================= */
+.card-gradient {
+  background: linear-gradient(90deg, #000b42 0%, #142370 100%);
+  border-radius: 16px;
+  color: #ffffff;
+  box-shadow: 0px 6px 18px rgba(0, 0, 0, 0.12);
+  transition: all 0.25s ease-in-out;
+}
+.card-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.18);
+}
+.card-gradient h3 {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-size: 0.9rem;
+}
+.card-gradient .highlight {
+  color: #fecf26;
+}
+
+/* =========================================================
+   🟧  TABLE - MONITORING PENJUALAN
+========================================================= */
+.table-wrapper {
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow-x: auto;
+  overflow-y: visible;
+  box-shadow: 0px 6px 18px rgba(36, 58, 140, 0.15);
+}
+
+.table-header {
+  background: linear-gradient(90deg, #000b42 0%, #243a8c 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  padding: 16px 24px;
+}
+
+.table-body td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #1a1a1a;
+  border-bottom: 1px solid #e5e9f5;
+}
+.table-body tr:nth-child(even) {
+  background-color: #f8faff;
+}
+
+/* ====== Rp Formatting ====== */
+.td-rupiah {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-right: 24px;
+}
+
+/* =========================================================
+   🟨  BADGE & STATUS
+========================================================= */
+.badge {
+  width: 100px;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge.cash {
+  background: #ffe5e0;
+  color: #e94b3c;
+}
+.badge.transfer {
+  background: #d6eaff;
+  color: #3399ff;
+}
+.badge.tempo {
+  background: #fff7d6;
+  color: #fecf26;
+}
+
+.status-btn {
+  width: 90px;
+  text-align: center;
+  border-radius: 8px;
+  padding: 7px 0;
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+}
+.status-btn.lunas {
+  background-color: #52d726;
+}
+.status-btn.pending {
+  background-color: #ffb200;
+}
+
+/* =========================================================
+   🟪  SECTIONS (WRAPPER)
+========================================================= */
+.section-bg {
+  background-color: #ebf3ff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0px 6px 20px rgba(36, 58, 140, 0.12);
+}
+
+.box-section {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(36, 58, 140, 0.1);
+  padding: 24px;
+}
+
+.section-title {
+  font-weight: 600;
+  color: #000b42;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   🟫  AKTIVITAS STOK
+========================================================= */
+.card-gradient-dark {
+  background: linear-gradient(90deg, #000b42 0%, #243a8c 100%);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 14px 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-gradient-dark input {
+  background: transparent;
+  color: white;
+  border: none;
+  outline: none;
+}
+.card-gradient-dark input::placeholder {
+  color: #d2d8f1;
+}
+
+.aktivitas-body {
+  background-color: #f5f8ff;
+  border-radius: 0 0 16px 16px;
+  padding: 20px;
+}
+
+/* =========================================================
+   🟦  TOPBAR
+========================================================= */
+.topbar {
+  background: #ffffff;
+  /* border-radius: 16px;
+  padding: 16px 28px; */
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.08);
+}
+.topbar .searchbox {
+  background-color: #ebf3ff;
+  border-radius: 9999px;
+  padding: 8px 14px;
+}
+.topbar .searchbox input {
+  background: transparent;
+  border: none;
+  width: 100%;
+  color: #000b42;
+}
+.topbar .searchbox svg {
+  color: #6b7280;
+}
+
+.hover-gradient:hover {
+  background: linear-gradient(90deg, #000b42 0%, #142370 100%) !important;
+  color: #ffffff !important;
+  transition: all 0.25s ease;
+}
+.pagination {
+  list-style: none;
+  outline: none;
+}
+
+.pagination > li > a {
+  outline: none;
+  list-style: none;
+}
+.pagination > .active > a,
+.pagination > .active > span,
+.pagination > .active > a:hover,
+.pagination > .active > span:hover,
+.pagination > .active > a:focus,
+.pagination > .active > span:focus {
+  outline: none;
+  list-style: none;
+}
+
+/* DOT MATRIX PRINT STYLE */
+
+.dotmatrix-container {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* THERMAL */
+.dotmatrix-container.thermal {
+  width: 80mm;
+  padding: 5mm;
+}
+
+/* CONTINUOUS 9.5" */
+.dotmatrix-container.continuous {
+  width: 9.5in;
+  padding: 0.5in;
+  font-size: 12px;
+}
+
+/* PRINT ONLY */
+/* @media print {
+  body {
+    margin: 0;
+  }
+
+  #print-area {
+    break-inside: avoid;
+  }
+} */
+
+@page {
+  size: 9.5in 11in;
+  margin: 5mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
+  /* 🔥 THERMAL */
+  body.thermal .print-area {
+    width: 72mm;
+  }
+
+  /* 🔥 DOT MATRIX 9.5 x 11 */
+  body.a4 .print-area {
+    width: 9.5in;
+    padding: 10mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Tambahkan di index.css atau App.css */
+
+/* Smooth scrolling */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar untuk modal */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animasi untuk modal */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-animate {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Untuk memastikan modal selalu di tengah */
+.modal-center {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+
+/* Responsive max-height */
+@media (max-height: 700px) {
+  .modal-responsive {
+    max-height: 85vh !important;
+  }
+
+  .modal-content-responsive {
+    max-height: calc(85vh - 200px) !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .modal-responsive {
+    max-height: 80vh !important;
+  }
+
+  .modal-content-responsive {
+    max-height: calc(80vh - 200px) !important;
+  }
+}
