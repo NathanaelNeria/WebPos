@@ -16,6 +16,7 @@ import {
   getDocs,
   where,
   runTransaction,
+  writeBatch,
 } from "firebase/firestore";
 import { useAuth } from "../../Hooks/useAuth";
 import Swal from "sweetalert2";
@@ -72,6 +73,10 @@ export default function ProdukManagementPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isSaving, setIsSaving] = useState(false);
   const [kategoriDraft, setKategoriDraft] = useState("");
+  const [groupDraft, setGroupDraft] = useState("");
+  const [groupBeliDraft, setGroupBeliDraft] = useState("");
+  const [hargaBeliDraft, setHargaBeliDraft] = useState(0);
+  const [tambahanEcerDraft, setTambahanEcerDraft] = useState(0);
 
   // Ref untuk mencegah double submit
   const isSubmitting = useRef(false);
@@ -235,6 +240,11 @@ export default function ProdukManagementPage() {
     ...new Set(produk.map((p) => p?.kategori).filter(Boolean)),
   ];
 
+  const groups = [
+    "semua",
+    ...new Set(produk.map((p) => p?.group).filter(Boolean)),
+  ];
+
   // Reset form
   const resetForm = () => {
     setFormData({
@@ -263,9 +273,17 @@ export default function ProdukManagementPage() {
         status: product.status || "active",
       });
       setKategoriDraft(product.kategori || "");
+      setGroupDraft(product.group || "");
+      setGroupBeliDraft(product.groupBeli || "");
+      setHargaBeliDraft(product.hargaBeli || 0);
+      setTambahanEcerDraft(product.tambahanHargaEcer || 0);
     } else {
       resetForm();
       setKategoriDraft("");
+      setGroupDraft("");
+      setGroupBeliDraft("");
+      setHargaBeliDraft(0);
+      setTambahanEcerDraft(0);
     }
     setShowModal(true);
   };
@@ -296,6 +314,10 @@ export default function ProdukManagementPage() {
       formData.hargaReferensi < 0
     ) {
       errors.hargaReferensi = "Harga referensi tidak valid";
+    }
+
+    if (!groupDraft.trim()) {
+      errors.group = "Group wajib diisi";
     }
 
     setValidationErrors(errors);
@@ -383,9 +405,13 @@ export default function ProdukManagementPage() {
         kode: formData.kode.toUpperCase().trim(),
         nama: formData.nama.trim(),
         kategori: kategoriDraft.trim(),
+        group: groupDraft.trim(),
         hargaReferensi: Number(formData.hargaReferensi) || 0,
         status: formData.status,
         updatedAt: timestamp,
+        groupBeli: groupBeliDraft.trim(),
+        hargaBeli: Number(hargaBeliDraft) || 0,
+        tambahanHargaEcer: Number(tambahanEcerDraft) || 0,
       };
 
       let productId;
@@ -506,6 +532,119 @@ export default function ProdukManagementPage() {
               throw error;
             }
           }
+        }
+      }
+
+      // ================================
+      // BULK UPDATE BY GROUP (AUTO FOLLOW)
+      // ================================
+
+      if (editingProduct) {
+        const batch = writeBatch(db);
+
+        const kategori = kategoriDraft.trim();
+
+        // --- DETEKSI PERUBAHAN ---
+        const hargaJualBerubah =
+          Number(editingProduct.hargaReferensi) !==
+          Number(formData.hargaReferensi);
+
+        const hargaBeliBerubah =
+          Number(editingProduct.hargaBeli || 0) !== Number(hargaBeliDraft || 0);
+
+        const tambahanEcerBerubah =
+          Number(editingProduct.tambahanHargaEcer || 0) !==
+          Number(tambahanEcerDraft || 0);
+
+        // ================================
+        // UPDATE HARGA JUAL (hargaReferensi)
+        // + TAMBAHAN ECER
+        // kategori + group (JUAL)
+        // ================================
+        if (hargaJualBerubah || tambahanEcerBerubah) {
+          const qHargaJual = query(
+            collection(db, "produk"),
+            where("kategori", "==", kategori),
+            where("group", "==", groupDraft.trim()),
+          );
+
+          const snap = await getDocs(qHargaJual);
+
+          snap.docs.forEach((d) => {
+            if (d.id !== editingProduct.id) {
+              batch.update(d.ref, {
+                hargaReferensi: Number(formData.hargaReferensi),
+                tambahanHargaEcer: Number(tambahanEcerDraft) || 0,
+                updatedAt: serverTimestamp(),
+              });
+            }
+          });
+        }
+
+        // ================================
+        // UPDATE HARGA BELI
+        // kategori + groupBeli
+        // ================================
+        if (hargaBeliBerubah && groupBeliDraft.trim()) {
+          const qHargaBeli = query(
+            collection(db, "produk"),
+            where("kategori", "==", kategori),
+            where("groupBeli", "==", groupBeliDraft.trim()),
+          );
+
+          const snap = await getDocs(qHargaBeli);
+
+          snap.docs.forEach((d) => {
+            if (d.id !== editingProduct.id) {
+              batch.update(d.ref, {
+                hargaBeli: Number(hargaBeliDraft) || 0,
+                updatedAt: serverTimestamp(),
+              });
+            }
+          });
+        }
+
+        await batch.commit();
+      }
+
+      // ======================================
+      // AUTO SYNC HARGA BELI BY groupBeli
+      // kategori + groupBeli (HARD BOUNDARY)
+      // ======================================
+
+      if (editingProduct) {
+        const hargaBeliLama = Number(editingProduct.hargaBeli || 0);
+        const hargaBeliBaru = Number(hargaBeliDraft || 0);
+        const groupBeli = groupBeliDraft.trim();
+        const kategori = kategoriDraft.trim();
+
+        const hargaBeliBerubah = hargaBeliLama !== hargaBeliBaru;
+
+        // Hanya jalan kalau:
+        // - harga beli berubah
+        // - groupBeli tidak kosong
+        if (hargaBeliBerubah && groupBeli) {
+          const batch = writeBatch(db);
+
+          const qHargaBeli = query(
+            collection(db, "produk"),
+            where("kategori", "==", kategori), // ✅ batas kategori
+            where("groupBeli", "==", groupBeli), // ✅ batas group beli
+          );
+
+          const snapshot = await getDocs(qHargaBeli);
+
+          snapshot.docs.forEach((docSnap) => {
+            // Jangan update produk yang sedang diedit dua kali
+            if (docSnap.id !== editingProduct.id) {
+              batch.update(docSnap.ref, {
+                hargaBeli: hargaBeliBaru,
+                updatedAt: serverTimestamp(),
+              });
+            }
+          });
+
+          await batch.commit();
         }
       }
 
@@ -1380,15 +1519,6 @@ export default function ProdukManagementPage() {
                             <option key={cat} value={cat} />
                           ))}
                       </datalist>
-                      {/* <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <svg
-                          className="fill-current h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
-                      </div> */}
                     </div>
                     {validationErrors.kategori && (
                       <p className="mt-1 text-xs text-red-600">
@@ -1398,6 +1528,82 @@ export default function ProdukManagementPage() {
                     <p className="mt-1 text-xs text-gray-500">
                       Pilih kategori yang sudah ada atau buat baru
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Group <span className="text-red-500">*</span>
+                    </label>
+
+                    <input
+                      list="group-list"
+                      value={groupDraft}
+                      onChange={(e) => setGroupDraft(e.target.value)}
+                      placeholder="Contoh: all warna, bw A1, putih"
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                      disabled={isSaving}
+                    />
+
+                    <datalist id="group-list">
+                      {groups
+                        .filter((g) => g !== "semua")
+                        .map((g) => (
+                          <option key={g} value={g} />
+                        ))}
+                    </datalist>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      Group digunakan untuk perubahan harga massal
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Group Harga Beli
+                    </label>
+                    <input
+                      type="text"
+                      value={groupBeliDraft}
+                      onChange={(e) => setGroupBeliDraft(e.target.value)}
+                      placeholder="sm tua, wm tua, lc tua"
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Group harga beli digunakan untuk update harga beli massal
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga Beli
+                    </label>
+                    <input
+                      type="number"
+                      value={hargaBeliDraft}
+                      onChange={(e) =>
+                        setHargaBeliDraft(Number(e.target.value) || 0)
+                      }
+                      placeholder="contoh: 50000"
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Harga beli digunakan untuk update harga beli massal
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Harga tambahan untuk eceran (Rp/kg)
+                    </label>
+                    <input
+                      type="number"
+                      value={tambahanEcerDraft}
+                      onChange={(e) =>
+                        setTambahanEcerDraft(Number(e.target.value) || 0)
+                      }
+                      placeholder="contoh: 3000"
+                      className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+                    />
                   </div>
 
                   {/* Harga Referensi */}

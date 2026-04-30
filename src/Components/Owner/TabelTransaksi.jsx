@@ -294,6 +294,7 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
         metode_pembayaran: metodePembayaran,
         total_harga: totalHargaBaru,
         jumlah_dibayar: totalHargaBaru,
+        subtotal: totalHargaBarang,
       });
 
       // update state lokal
@@ -304,6 +305,7 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
         potongan: Number(potongan || 0),
         metode_pembayaran: metodePembayaran,
         total_harga: totalHargaBaru,
+        subtotal: totalHargaBarang,
       }));
 
       Swal.fire({
