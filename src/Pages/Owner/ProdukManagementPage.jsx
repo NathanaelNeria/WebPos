@@ -1225,6 +1225,12 @@ export default function ProdukManagementPage() {
                   Kategori
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Group Jual
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Group Beli
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Harga Referensi
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1244,7 +1250,7 @@ export default function ProdukManagementPage() {
                   {/* ================= HEADER KATEGORI ================= */}
                   <tr className="bg-blue-100">
                     <td
-                      colSpan={7}
+                      colSpan={9}
                       className="px-6 py-3 font-bold text-blue-900"
                     >
                       📦 Kategori: {kategori}
@@ -1256,10 +1262,10 @@ export default function ProdukManagementPage() {
                       {/* ================= HEADER GROUP ================= */}
                       <tr className="bg-gray-100">
                         <td
-                          colSpan={7}
+                          colSpan={9}
                           className="px-10 py-2 font-semibold text-gray-800"
                         >
-                          ▶ Group: {groupName} ({items.length})
+                          ▶ Group Jual: {groupName} ({items.length})
                         </td>
                       </tr>
 
@@ -1279,6 +1285,12 @@ export default function ProdukManagementPage() {
 
                           {/* KATEGORI */}
                           <td className="px-6 py-4">{product.kategori}</td>
+
+                          <td className="px-6 py-4">{product.group || "-"}</td>
+
+                          <td className="px-6 py-4">
+                            {product.groupBeli || "-"}
+                          </td>
 
                           {/* HARGA */}
                           <td className="px-6 py-4 text-green-600 font-semibold">
