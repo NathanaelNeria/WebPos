@@ -45,6 +45,8 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
   const persenSelisih =
     hargaReferensi > 0 ? ((selisihHarga / hargaReferensi) * 100).toFixed(1) : 0;
 
+  console.log(item);
+
   const handleSaveHarga = () => {
     const newHarga = parseFloat(hargaInput.replace(/[^0-9]/g, "")) || 0;
     if (newHarga > 0 && newHarga !== item.harga_per_kg) {

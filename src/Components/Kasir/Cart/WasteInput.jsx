@@ -158,13 +158,7 @@ export default function WasteInput({
   const total = jual + ujung;
   const sisaBaru = sumberBerat - total;
 
-  console.log("DEBUG", {
-    status: roll?.status,
-    isRolDibuka: roll?.is_rol_dibuka,
-    beratNeto,
-    sumberBerat,
-    beratSisaDB: roll?.berat_sisa,
-  });
+  console.log("Debug WasteInput:", { roll });
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -206,7 +200,7 @@ export default function WasteInput({
 
               <span className="text-gray-500">Produk:</span>
               <span className="font-medium truncate">
-                {roll.produkNama || "-"}
+                {roll.produkNama || roll.produk_nama || "-"}
               </span>
 
               <span className="text-gray-500">Berat Sisa:</span>

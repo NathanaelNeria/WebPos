@@ -289,6 +289,8 @@ export default function Penjualan() {
           return;
         }
 
+        console.log("isi roll:", roll);
+
         setShowWasteInput(true);
         setSelectedRoll({
           ...roll,
@@ -391,8 +393,14 @@ export default function Penjualan() {
       produkNama: roll.produk_nama || "Unknown",
       kategori: roll.kategori,
       harga_referensi: roll.harga_referensi || 0,
+      group: roll.group || "-",
       harga_per_kg: roll.harga_jual || roll.harga_referensi || 0,
     };
+
+    const hargaReferensi = roll.harga_referensi || 0;
+    const tambahanEcer = roll.tambahanHargaEcer || 0;
+
+    const hargaEcer = hargaReferensi + tambahanEcer;
 
     if (tipe === TIPE_ITEM.ROL) {
       setCart((prev) => [
@@ -424,7 +432,8 @@ export default function Penjualan() {
           berat_neto: beratNeto | null,
           berat_sisa_db: beratSisaDB | null,
           berat_sisa_asal: roll.berat_sisa,
-          subtotal: beratJual * (roll.harga_jual || roll.harga_referensi || 0),
+          harga_per_kg: hargaEcer,
+          subtotal: beratJual * (hargaEcer || hargaReferensi || 0),
         },
       ]);
 
@@ -466,7 +475,12 @@ export default function Penjualan() {
     setCart((prev) =>
       prev.map((item) => {
         if (item.id !== itemId) return item;
-        const updated = { ...item, ...updates };
+
+        const updated = {
+          ...item,
+          ...updates,
+        };
+
         if (updated.tipe === TIPE_ITEM.ECER) {
           updated.subtotal =
             (updated.berat_jual || 0) * (updated.harga_per_kg || 0);

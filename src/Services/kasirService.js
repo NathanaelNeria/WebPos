@@ -201,6 +201,7 @@ export const validateRollForCart = async (barcode, gudangId) => {
 
     let hargaReferensi = 0;
     let produkData = {};
+    let tambahanHargaEcer = roll.tambahanHargaEcer || 0;
 
     if (roll.produk_id) {
       const produk = await getProdukById(roll.produk_id);
@@ -208,6 +209,7 @@ export const validateRollForCart = async (barcode, gudangId) => {
         produkData = produk;
         hargaReferensi =
           produk.hargaReferensi || produk.harga_referensi_jual || 0;
+        tambahanHargaEcer = produk.tambahanHargaEcer || 0;
       }
     }
 
@@ -231,6 +233,7 @@ export const validateRollForCart = async (barcode, gudangId) => {
         harga_referensi: hargaReferensi,
         harga_jual: hargaReferensi,
         max_berat: roll.berat_sisa,
+        tambahanHargaEcer: tambahanHargaEcer,
       },
     };
   } catch (error) {
@@ -271,6 +274,8 @@ export const getAvailableRolls = async (gudangId, limitCount = 50) => {
       const produkData = produkMap.get(data.produk_id) || {};
       const hargaReferensi =
         produkData.hargaReferensi || produkData.harga_referensi_jual || 0;
+      const tambahanHargaEcer = produkData.tambahanHargaEcer || 0;
+      const group = produkData.group || "-";
 
       return {
         id: doc.id,
@@ -288,7 +293,8 @@ export const getAvailableRolls = async (gudangId, limitCount = 50) => {
         tanggal_masuk: data.tanggal_masuk,
         supplier_id: data.supplier_id,
         supplier_nama: data.supplier_nama,
-        lokasi_rak: data.lokasi_rak,
+        tambahanHargaEcer: tambahanHargaEcer,
+        group: group,
         catatan: data.catatan,
       };
     });

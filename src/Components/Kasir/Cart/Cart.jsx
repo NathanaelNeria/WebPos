@@ -36,6 +36,16 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat("id-ID").format(value || 0);
 };
 
+const EcerBadge = ({ value }) => {
+  if (!value || value <= 0) return null;
+
+  return (
+    <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded bg-amber-100 text-amber-700 border border-amber-200">
+      +Ecer {value.toLocaleString("id-ID")}
+    </span>
+  );
+};
+
 /* ======================================================
    CART ITEM COMPONENT
 ====================================================== */
@@ -51,6 +61,11 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
   const selisihHarga = hargaJual - hargaReferensi;
   const persenSelisih =
     hargaReferensi > 0 ? ((selisihHarga / hargaReferensi) * 100).toFixed(1) : 0;
+
+  const tambahanEcer =
+    item.tipe === TIPE_ITEM.ECER && hargaJual > hargaReferensi
+      ? hargaJual - hargaReferensi
+      : 0;
 
   const handleSaveHarga = () => {
     const newHarga = parseFloat(hargaInput.replace(/[^0-9]/g, "")) || 0;
@@ -262,7 +277,10 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
             ) : (
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-black-700">
-                  {formatRupiah(item.harga_per_kg)}
+                  <div className="flex items-center gap-1">
+                    <span>{formatRupiah(item.harga_per_kg)}/kg</span>
+                    <EcerBadge value={tambahanEcer} />
+                  </div>
                 </span>
                 <button
                   onClick={() => setIsEditingHarga(true)}
