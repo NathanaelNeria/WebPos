@@ -403,7 +403,7 @@ export const printNotaPenjualanRangkap = (data) => {
         <div style="height:60px;"></div>
         <div style="border-top:1px solid #000; margin-top:6px;"></div>
         <div style="margin-top:4px;">
-          <strong>${data.customer?.nama?.toUpperCase() || "__________________"}</strong>
+          <strong>${data.customer.nama.toUpperCase() || "__________________"}</strong>
         </div>
       </div>
     </div>

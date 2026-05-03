@@ -432,8 +432,9 @@ export default function Penjualan() {
           berat_neto: beratNeto | null,
           berat_sisa_db: beratSisaDB | null,
           berat_sisa_asal: roll.berat_sisa,
+          tambahanHargaEcer: tambahanEcer,
           harga_per_kg: hargaEcer,
-          subtotal: beratJual * (hargaEcer || hargaReferensi || 0),
+          subtotal: beratJual * hargaEcer,
         },
       ]);
 
@@ -491,42 +492,60 @@ export default function Penjualan() {
   };
 
   const handleUpdateHarga = (itemId, newHargaPerKg) => {
-    const harga = Number(newHargaPerKg) || 0;
+    const hargaBaru = Number(newHargaPerKg) || 0;
 
     setCart((prev) => {
-      // 1️⃣ Cari item yang memicu perubahan
       const triggerItem = prev.find((item) => item.id === itemId);
       if (!triggerItem) return prev;
 
-      // 2️⃣ JIKA YANG DIUBAH ADALAH ECER → update item itu saja
-      if (triggerItem.tipe === TIPE_ITEM.ECER) {
+      const { kategori, group, tipe } = triggerItem;
+
+      // =========================
+      // ✅ JIKA ECER DIUBAH
+      // → hanya ECER dalam grup
+      // =========================
+      if (tipe === "ECER") {
         return prev.map((item) => {
-          if (item.id !== itemId) return item;
+          if (
+            item.tipe !== "ECER" ||
+            item.kategori !== kategori ||
+            item.group !== group
+          ) {
+            return item;
+          }
 
           return {
             ...item,
-            harga_per_kg: harga,
-            subtotal: (item.berat_jual || 0) * harga,
+            harga_per_kg: hargaBaru,
+            subtotal: hargaBaru * (item.berat_jual || 0),
           };
         });
       }
 
-      // 3️⃣ JIKA YANG DIUBAH ADALAH ROL
-      // → update SEMUA ROL dengan produkId yang sama
+      // =========================
+      // ✅ JIKA ROLL DIUBAH
+      // → RESET TOTAL ECER
+      // =========================
+      const hargaRollBaru = hargaBaru;
+
       return prev.map((item) => {
-        if (
-          item.tipe === TIPE_ITEM.ROL &&
-          item.produkId === triggerItem.produkId
-        ) {
-          return {
-            ...item,
-            harga_per_kg: harga,
-            subtotal: (item.berat || 0) * harga,
-          };
+        if (item.kategori !== kategori || item.group !== group) {
+          return item;
         }
 
-        // ✅ ECER atau produk lain tidak ikut berubah
-        return item;
+        const hargaPerKgBaru =
+          item.tipe === "ECER"
+            ? hargaRollBaru + (item.tambahanHargaEcer || 0)
+            : hargaRollBaru;
+
+        const berat =
+          item.tipe === "ECER" ? item.berat_jual || 0 : item.berat || 0;
+
+        return {
+          ...item,
+          harga_per_kg: hargaPerKgBaru,
+          subtotal: hargaPerKgBaru * berat,
+        };
       });
     });
   };

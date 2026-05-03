@@ -85,6 +85,11 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
     );
   };
 
+  const deltaDiLuarEcer =
+    item.tipe === TIPE_ITEM.ECER
+      ? selisihHarga - (item.tambahanHargaEcer || 0)
+      : selisihHarga;
+
   // Rol Utuh Item - Compact Version
   if (item.tipe === TIPE_ITEM.ROL) {
     return (
@@ -276,7 +281,7 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
                 <DollarSign size={10} className="text-secondary" />
                 Harga Jual
               </span>
-              <HargaDiffBadge />
+              {deltaDiLuarEcer !== 0 && <HargaDiffBadge />}
             </div>
 
             {isEditingHarga ? (

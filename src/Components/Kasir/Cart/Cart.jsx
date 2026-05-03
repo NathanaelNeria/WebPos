@@ -63,9 +63,7 @@ const CartItem = ({ item, onRemove, onUpdateHarga, onEdit, format2 }) => {
     hargaReferensi > 0 ? ((selisihHarga / hargaReferensi) * 100).toFixed(1) : 0;
 
   const tambahanEcer =
-    item.tipe === TIPE_ITEM.ECER && hargaJual > hargaReferensi
-      ? hargaJual - hargaReferensi
-      : 0;
+    item.tipe === TIPE_ITEM.ECER ? item.tambahanHargaEcer || 0 : 0;
 
   const handleSaveHarga = () => {
     const newHarga = parseFloat(hargaInput.replace(/[^0-9]/g, "")) || 0;
