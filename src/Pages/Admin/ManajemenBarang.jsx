@@ -703,7 +703,7 @@ export default function ManajemenBarang() {
         const status = document.getElementById("statusBaru").value;
         const reason = document.getElementById("alasan").value;
 
-        if (!berat || berat <= 0)
+        if (berat === null || berat === undefined || berat < 0)
           return Swal.showValidationMessage("Berat tidak valid");
         if (!reason) return Swal.showValidationMessage("Alasan wajib diisi");
 

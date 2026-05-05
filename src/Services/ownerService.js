@@ -39,7 +39,7 @@ export const ownerUpdateRollBerat = async ({
   reason,
   owner,
 }) => {
-  if (!rollId || !newBerat || newBerat <= 0) {
+  if (!rollId || newBerat === null || newBerat < 0) {
     throw new Error("Data edit berat tidak valid");
   }
 
@@ -144,7 +144,7 @@ export const ownerUpdateRollBeratDanStatus = async ({
   reason,
   owner,
 }) => {
-  if (!rollId || !newBerat || newBerat <= 0 || !newStatus || !reason) {
+  if (!rollId || newBerat === null || newBerat < 0 || !newStatus || !reason) {
     throw new Error("Data edit roll tidak valid");
   }
 
