@@ -133,6 +133,8 @@ export default function WasteInput({
       if (!confirm) return;
     }
 
+    console.log("beratneto di wasteinput", fromUnit(toUnit(netoNumber)));
+
     onConfirm({
       beratJual: fromUnit(toUnit(jual)),
       beratUjung: fromUnit(toUnit(ujung)),
@@ -157,8 +159,6 @@ export default function WasteInput({
   const ujung = parseFloat(beratUjung) || 0;
   const total = jual + ujung;
   const sisaBaru = sumberBerat - total;
-
-  console.log("Debug WasteInput:", { roll });
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

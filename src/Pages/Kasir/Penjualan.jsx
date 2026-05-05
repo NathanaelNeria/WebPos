@@ -422,6 +422,7 @@ export default function Penjualan() {
         showConfirmButton: false,
       });
     } else {
+      console.log("bera neto di addToCart:", beratNeto);
       setCart((prev) => [
         ...prev,
         {
@@ -429,8 +430,8 @@ export default function Penjualan() {
           tipe: TIPE_ITEM.ECER,
           berat_jual: beratJual,
           berat_ujung: beratUjung || 0,
-          berat_neto: beratNeto | null,
-          berat_sisa_db: beratSisaDB | null,
+          berat_neto: beratNeto ?? null,
+          berat_sisa_db: beratSisaDB ?? null,
           berat_sisa_asal: roll.berat_sisa,
           tambahanHargaEcer: tambahanEcer,
           harga_per_kg: hargaEcer,
@@ -931,6 +932,8 @@ export default function Penjualan() {
             (item) =>
               item.rollId === selectedRoll.id && item.tipe === TIPE_ITEM.ECER,
           );
+
+          console.log("berat neto dari waste input:", beratNeto);
 
           addToCart(
             selectedRoll,
