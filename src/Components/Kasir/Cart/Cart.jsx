@@ -398,7 +398,7 @@ export default function Cart({
   const [showWasteInput, setShowWasteInput] = useState(false);
 
   useEffect(() => {
-    console.log("Cart updated:", cart);
+    // console.log("Cart updated:", cart);
   }, [cart]);
 
   const handleEditItem = (item) => {

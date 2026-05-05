@@ -133,8 +133,6 @@ export default function WasteInput({
       if (!confirm) return;
     }
 
-    console.log("beratneto di wasteinput", fromUnit(toUnit(netoNumber)));
-
     onConfirm({
       beratJual: fromUnit(toUnit(jual)),
       beratUjung: fromUnit(toUnit(ujung)),

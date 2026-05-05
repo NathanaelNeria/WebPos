@@ -422,7 +422,6 @@ export default function Penjualan() {
         showConfirmButton: false,
       });
     } else {
-      console.log("bera neto di addToCart:", beratNeto);
       setCart((prev) => [
         ...prev,
         {
