@@ -42,77 +42,63 @@ const printNotaPenjualanThermal = (data) => {
     return;
   }
 
-  const formatRupiah = (n) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(n || 0);
+  // ===========================
+  // THERMAL HELPER (ESC/POS LOOK)
+  // ===========================
+
+  const MAX = 38;
+  const line = "-".repeat(MAX);
+
+  const right = (label, value) => {
+    const space = MAX - (label.length + value.length);
+    return label + " ".repeat(space > 1 ? space : 1) + value;
+  };
+
+  const center = (text) => {
+    const pad = Math.floor((MAX - text.length) / 2);
+    return " ".repeat(pad > 0 ? pad : 0) + text;
+  };
+
+  const rupiah = (n) => n.toLocaleString("id-ID", { minimumFractionDigits: 0 });
 
   const formatTanggal = (value) => {
     if (!value) return "-";
-
-    // ✅ Firestore Timestamp
-    if (typeof value.toDate === "function") {
-      const d = value.toDate();
-      return d.toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    }
-
-    // ✅ ISO string / Date biasa
+    if (typeof value.toDate === "function") value = value.toDate();
     const d = new Date(value);
-    if (isNaN(d)) return "-";
-
-    return d.toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    return d.toLocaleDateString("id-ID");
   };
 
-  const getShortId = (raw) => raw.toString().slice(-4);
-
   // ===========================
-  // 1. GROUPING PRODUK
+  // GROUP ITEM (SAMA DENGAN RN)
   // ===========================
   const groupItems = (items) => {
     const groups = {};
-
-    items.forEach((item) => {
-      const kategori = item.kategori || "LAINNYA";
-      const key = `${kategori}_${item.produkNama}_${item.harga_per_kg}`;
+    items.forEach((i) => {
+      const kategori = i.kategori || "LAINNYA";
+      const key = `${kategori}_${i.produkNama}_${i.harga_per_kg}`;
 
       if (!groups[key]) {
         groups[key] = {
           kategori,
-          nama: item.produkNama,
-          harga: item.harga_per_kg,
-          tipe: item.tipe,
+          nama: i.produkNama,
+          harga: i.harga_per_kg,
+          tipe: i.tipe,
           totalBerat: 0,
           qty: 0,
-          rolls: [], // ✅ SIMPAN DETAIL ROLL
+          rolls: [],
         };
       }
 
       const berat =
-        item.tipe === "ROL"
-          ? parseFloat(item.berat || 0)
-          : parseFloat(item.berat_jual || 0);
+        i.tipe === "ROL"
+          ? Number(i.berat || 0)
+          : Number(i.berat_jual || i.berat || 0);
 
-      const idRaw = item.barcode || item.rollId || "-";
-      const shortId = getShortId(idRaw);
+      const id = String(i.barcode || i.rollId || "-").slice(-4);
 
       groups[key].totalBerat += berat;
       groups[key].qty += 1;
-
-      // ✅ simpan per roll
-      groups[key].rolls.push({
-        id: shortId,
-        berat: berat,
-      });
+      groups[key].rolls.push({ id, berat });
     });
 
     return Object.values(groups).sort((a, b) =>
@@ -120,243 +106,145 @@ const printNotaPenjualanThermal = (data) => {
     );
   };
 
-  // ===========================
-  // 2. CHUNK MAX 3 ID PER BARIS
-  // ===========================
-  const chunkIds = (ids) => {
-    const chunks = [];
-    for (let i = 0; i < ids.length; i += 3) {
-      chunks.push(ids.slice(i, i + 3).join("; "));
-    }
-    return chunks;
-  };
-
-  const groupedItems = groupItems(data.items);
-
-  const groupedByKategori = groupedItems.reduce((acc, item) => {
-    if (!acc[item.kategori]) {
-      acc[item.kategori] = [];
-    }
+  const grouped = groupItems(data.items || []);
+  const groupedByKategori = grouped.reduce((acc, item) => {
+    if (!acc[item.kategori]) acc[item.kategori] = [];
     acc[item.kategori].push(item);
     return acc;
   }, {});
 
+  const calcRollEcer = (items) => {
+    let rollQty = 0;
+    let rollKg = 0;
+    let ecerQty = 0;
+    let ecerKg = 0;
+
+    items.forEach((item) => {
+      if (item.tipe === "ROL") {
+        rollQty += 1;
+        rollKg += Number(item.berat || 0);
+      } else {
+        ecerQty += 1;
+        ecerKg += Number(item.berat_jual || item.berat || 0);
+      }
+    });
+
+    return { rollQty, rollKg, ecerQty, ecerKg };
+  };
+
+  const { rollQty, rollKg, ecerQty, ecerKg } = calcRollEcer(data.items || []);
+
   // ===========================
-  // 3. CREATE HTML ITEMS
+  // TOTAL
   // ===========================
-  const itemsHtml = Object.entries(groupedByKategori)
-    .map(([kategori, items]) => {
-      const header = `
-      <div class="kategori-header">
-        ${kategori}
-      </div>
-    `;
-
-      const itemHtml = items
-        .map((item) => {
-          const total = item.totalBerat * item.harga;
-
-          const rollLines = item.rolls
-            .map(
-              (r) => `
-                <div class="line3">
-                  <span class="rollid">
-                    ID: ${r.id} (${r.berat.toFixed(2)} Kg)
-                  </span>
-                </div>
-              `,
-            )
-            .join("");
-
-          return `
-          <div class="item">
-            <div class="line1">
-              <span class="name">${item.nama.toUpperCase()}</span>
-              <span class="price">${formatRupiah(total)}</span>
-            </div>
-
-            <div class="line2">
-              ${item.totalBerat.toFixed(2)} Kg × ${formatRupiah(item.harga)}
-            </div>
-
-            <div class="line3">
-              ${item.qty} Roll
-            </div>
-
-            ${rollLines}
-
-            <div class="line3">
-              <span class="tipe">${item.tipe}</span>
-            </div>
-          </div>
-        `;
-        })
-        .join("");
-
-      return header + itemHtml;
-    })
-    .join("");
-
-  const subtotal = Number(data.subtotal) || 0;
-  const ongkir = Number(data.ongkir) || 0;
-  const potongan = Number(data.potongan) || 0;
+  const subtotal = Number(data.subtotal || 0);
+  const ongkir = Number(data.ongkir || 0);
+  const potongan = Number(data.potongan || 0);
   const totalFinal = subtotal + ongkir - potongan;
 
+  let out = "";
+
+  /* ===== HEADER ===== */
+  out += center("FAJAR TERANG") + "\n";
+  out += center("Ruko Auri, Jl. Anggrek IV Blok AA No.17") + "\n";
+  out += center("Telp: 0811-239-191/0899-9522-200") + "\n\n";
+
+  out += center("NOTA PENJUALAN") + "\n";
+  out += line + "\n";
+
+  /* ===== META ===== */
+  out += right("No Nota:", data.nomorNota) + "\n";
+  out += right("Tanggal:", formatTanggal(data.tanggal)) + "\n";
+  out += right("Customer:", (data.customer?.nama || "-").toUpperCase()) + "\n";
+  out += right("Kasir:", data.kasir.toUpperCase()) + "\n";
+  out += line + "\n";
+
+  /* ===== ITEMS ===== */
+  Object.entries(groupedByKategori).forEach(([kategori, items]) => {
+    out += center(kategori.toUpperCase()) + "\n";
+    out += line + "\n";
+
+    items.forEach((item) => {
+      const total = item.totalBerat * item.harga;
+
+      out += item.nama.toUpperCase() + "\n";
+      out += right("Rp", "Rp" + rupiah(total)) + "\n";
+      out += `${item.totalBerat.toFixed(2)} Kg x Rp${rupiah(item.harga)}\n`;
+      out += `${item.qty} Roll\n`;
+
+      item.rolls.forEach((r) => {
+        out += `ID: ${r.id} (${r.berat.toFixed(2)} Kg)\n`;
+      });
+
+      out += item.tipe.toUpperCase() + "\n";
+      out += line + "\n";
+    });
+  });
+
+  out +=
+    right("Total Roll:", `${rollQty} Roll (${rollKg.toFixed(2)} Kg)`) + "\n";
+
+  out +=
+    right("Total Ecer:", `${ecerQty} Item (${ecerKg.toFixed(2)} Kg)`) + "\n";
+
+  out += line + "\n";
+
+  /* ===== TOTAL ===== */
+  out += right("Subtotal:", "Rp" + rupiah(subtotal)) + "\n";
+  out += line + "\n";
+  out += right("TOTAL:", "Rp" + rupiah(totalFinal)) + "\n";
+  out +=
+    right(
+      "Metode Pembayaran:",
+      (data.metodePembayaran || "TRANSFER").toUpperCase(),
+    ) + "\n";
+  out += line + "\n";
+
+  /* ===== FOOTER ===== */
+  out += center("Terima Kasih") + "\n\n";
+
   // ===========================
-  // 4. FULL HTML THERMAL 72mm
+  // FINAL HTML (PURE THERMAL)
   // ===========================
   const content = `
-  <html>
-  <head>
-    <title>Nota Thermal</title>
-    <style>
-      @page { size: 72mm auto; margin: 0; }
-
-      body {
-        width: 66mm;
-        font-family: 'Arial', sans-serif;
-        font-size: 12pt;
-        line-height: 1.35;
-        padding: 4mm;
-      }
-
-      .center { text-align: center; }
-
-      .header {
-        font-size: 16pt;
-        font-weight: bold;
-        margin-bottom: 3mm;
-      }
-
-      .sub {
-        font-size: 11pt;
-        margin-bottom: 4mm;
-        font-weight: bold;
-      }
-
-      .item {
-        border-bottom: 1px dashed #000;
-        padding-bottom: 3mm;
-        margin-bottom: 3mm;
-      }
-
-      .line1 {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13pt;
-      }
-
-      .line2 {
-        font-size: 12pt;
-        margin-top: 1mm;
-      }
-
-      .line3 {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11pt;
-        margin-top: 1mm;
-      }
-
-      .rollid {
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-      }
-
-      .total-section {
-        margin-top: 4mm;
-        border-top: 2px dashed #000;
-        padding-top: 3mm;
-        font-size: 14pt;
-      }
-
-      .total-section .line1 {
-        font-size: 14pt;
-        
-      }
-
-      .footer {
-        margin-top: 5mm;
-        text-align: center;
-        font-size: 11pt;
-        
-      }
-
-      .kategori-header {
-        text-align: center;
-        font-weight: bold;
-        margin: 6px 0;
-        padding: 2px 0;
-        border-top: 1px dashed #000;
-        border-bottom: 1px dashed #000;
-      }
-
-      @media print {
-        .no-print { display: none; }
-      }
-    </style>
-  </head>
-
-  <body>
-
-    <div class="center header">NOTA PENJUALAN</div>
-    <div class="center sub">
-        Fajar Terang<br/>
-        Ruko Auri, Jl. Anggrek IV<br/>
-        Blok AA No.17<br/>
-        Komplek Ruko Auri, Tanah Abang<br/>
-        Jakarta Pusat 10250<br/>
-        Telp: 0811-239-191/0899-9522-200
-    </div>
-
-    <div style="font-size:12pt; margin-bottom:4mm;">
-      No Nota: ${data.nomorNota}<br/>
-      Tanggal: ${formatTanggal(data.tanggal)}<br/>
-      Customer: ${data.customer.nama.toUpperCase() || "-"}
-    </div>
-
-    ${itemsHtml}
-
-    <div class="total-section">
-    <!-- Subtotal -->
-    <div class="line1">
-      <span>Subtotal</span>
-      <span>${formatRupiah(subtotal)}</span>
-    </div>
-
-    ${
-      ongkir > 0
-        ? `
-    <div class="line1" style="font-size:12pt;">
-      <span>Ongkir</span>
-      <span>${formatRupiah(ongkir)}</span>
-    </div>
-    `
-        : ""
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Nota Thermal</title>
+  <style>
+    @page { size: 72mm auto; margin: 0; }
+    
+body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
     }
 
-    ${
-      potongan > 0
-        ? `
-    <div class="line1" style="font-size:12pt;">
-      <span>Potongan</span>
-      <span>-${formatRupiah(potongan)}</span>
-    </div>
-    `
-        : ""
+
+    
+pre {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 10.5px;
+      line-height: 1.25;
+      white-space: pre;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      padding: 2mm 4mm;
+      box-sizing: border-box;
+      font-variant-ligatures: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
-    <!-- Total akhir -->
-    <div class="line1" style="border-top:1px dashed #000; margin-top:4px; padding-top:4px;">
-      <span>Total</span>
-      <span>${formatRupiah(totalFinal)}</span>
-    </div>
-  </div>
+    @media print {
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+<pre>${out}</pre>
+<br/>
 
-    <div class="footer">
-      Kasir: ${data.kasir.toUpperCase()}<br/>
-      Terima kasih
-    </div>
 
  <!-- Tombol Print (hidden saat print) -->
       <div class="no-print" style="text-align:center; margin-top:20px;">

@@ -267,6 +267,15 @@ input:focus {
   }
 } */
 
+.sep {
+  font-size: 11pt;
+  text-align: center;
+  margin: 2mm 0;
+}
+.kategori {
+  font-weight: bold;
+}
+
 @page {
   size: 9.5in 11in;
   margin: 5mm;

@@ -304,19 +304,19 @@ export const printNotaPenjualanRangkap = (data) => {
       <div class="nota">
 
         <div class="header">
-            <h1 style="text-align:center;"><strong>NOTA PENJUALAN</strong></h1>
-            <h2 style="text-align:center;"><strong>Fajar Terang</strong></h2>
-            <h2 style="text-align:center;"><strong>Ruko Auri, Jl. Anggrek IV Blok AA No.17</strong></h2>
-            <h2 style="text-align:center;"><strong>Telp: 0811-239-191 / 0899-9522-200</strong></h2>
+            <br/>
+            <h3 style="text-align:center;"><strong>Fajar Terang</strong></h3>
+            <h3 style="text-align:center;"><strong>Ruko Auri, Jl. Anggrek IV Blok AA No.17</strong></h3>
+            <h3 style="text-align:center;"><strong>Telp: 0811-239-191 / 0899-9522-200</strong></h3>
 
             <div style="display:flex; justify-content:space-between; margin:10px 0; font-size:14px;">
             <div><strong>No: ${data.nomorNota}</strong></div>
-            <div><strong>Tanggal: ${formatTanggalIndonesia(data.tanggal)}</strong></div>
+            <div style="text-align:left;"><strong>Tanggal: ${formatTanggalIndonesia(data.tanggal)}</strong></div>
             </div>
 
             <div style="display:flex; justify-content:flex-start; margin:10px 0; font-size:14px;">
             <strong>Kepada:</strong><br/>
-            <strong>${data.customer.nama.toUpperCase() || "-"}</strong>
+            <strong>${data.customer?.nama?.toUpperCase() || "-"}</strong>
             </div>
         </div>
         <table>
@@ -403,7 +403,7 @@ export const printNotaPenjualanRangkap = (data) => {
         <div style="height:60px;"></div>
         <div style="border-top:1px solid #000; margin-top:6px;"></div>
         <div style="margin-top:4px;">
-          <strong>${data.customer.nama.toUpperCase() || "__________________"}</strong>
+          <strong>${data.customer?.nama?.toUpperCase() || "__________________"}</strong>
         </div>
       </div>
     </div>
