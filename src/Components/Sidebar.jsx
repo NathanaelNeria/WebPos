@@ -20,6 +20,7 @@ import {
   Activity,
   AlertCircle,
   Building,
+  Contact2,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 
@@ -178,6 +179,12 @@ export default function Sidebar() {
       path: "/Owner/ManajemenUser",
       icon: Users,
       description: "Kelola user",
+    },
+    {
+      name: "Manajemen Customer",
+      path: "/Owner/ManajemenCustomer",
+      icon: Contact2,
+      description: "Kelola customer",
     },
   ];
 

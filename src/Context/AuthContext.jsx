@@ -307,24 +307,22 @@ export function AuthProvider({ children }) {
         if (baseUser.isOwner) {
           loadedGudangs = await loadAllGudangs();
 
-          const savedGudangId =
-            localStorage.getItem(STORAGE_KEY) || baseUser.activeGudangId;
-
-          activeGudangToSet =
-            loadedGudangs.find((g) => g.id === savedGudangId) ||
-            loadedGudangs[0];
+          // Determine active gudang: stored → primary → first available
+          const storedGudangId = localStorage.getItem(STORAGE_KEY);
+          const primaryGudangId = baseUser.gudangId;
+          const candidateGudangId = storedGudangId || primaryGudangId || (loadedGudangs[0] && loadedGudangs[0].id);
+          activeGudangToSet = loadedGudangs.find((g) => g.id === candidateGudangId) || loadedGudangs[0] || null;
         }
 
         // 2️⃣ KARYAWAN (ADMIN + KASIR) → SELALU PAKAI kasirGudangIds
         else if (baseUser.kasirGudangIds?.length > 0) {
           loadedGudangs = await loadMultipleGudangs(baseUser.kasirGudangIds);
 
-          const savedGudangId =
-            localStorage.getItem(STORAGE_KEY) || baseUser.activeGudangId;
-
-          activeGudangToSet =
-            loadedGudangs.find((g) => g.id === savedGudangId) ||
-            loadedGudangs[0];
+          // Determine active gudang: stored → primary → first available
+          const storedGudangId = localStorage.getItem(STORAGE_KEY);
+          const primaryGudangId = baseUser.gudangId;
+          const candidateGudangId = storedGudangId || primaryGudangId || (loadedGudangs[0] && loadedGudangs[0].id);
+          activeGudangToSet = loadedGudangs.find((g) => g.id === candidateGudangId) || loadedGudangs[0] || null;
         }
 
         // 3️⃣ FALLBACK (HARUSNYA HAMPIR TIDAK TERPAKAI)

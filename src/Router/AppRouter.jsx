@@ -2,7 +2,13 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState, useEffect, Suspense, lazy } from "react";
 import ProtectedRoute from "./ProtectedRoute";
-import { AlertTriangle, Home, ArrowLeft, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Home,
+  ArrowLeft,
+  RefreshCw,
+  Contact2,
+} from "lucide-react";
 import LoadingSpinner from "../Components/LoadingSpinner";
 import ErrorBoundary from "../Components/ErrorBoundary";
 
@@ -26,6 +32,9 @@ const MonitoringNotaTempo = lazy(
   () => import("../Pages/Owner/MonitoringNotaTempo"),
 );
 const ManajemenUser = lazy(() => import("../Pages/Owner/ManajemenUser"));
+const ManajemenCustomer = lazy(
+  () => import("../Pages/Owner/ManajemenCustomer"),
+);
 const ManajemenProduk = lazy(
   () => import("../Pages/Owner/ProdukManagementPage"),
 );
@@ -352,6 +361,13 @@ export const routeConfig = [
     allowedRoles: ["owner"],
     title: "Manajemen User",
     icon: "Users",
+  },
+  {
+    path: "/Owner/ManajemenCustomer",
+    element: <ManajemenCustomer />,
+    allowedRoles: ["owner"],
+    title: "Manajemen Customer",
+    icon: "Contact2",
   },
   {
     path: "/Owner/ManajemenProduk",
