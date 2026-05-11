@@ -45,6 +45,7 @@ const getProductsData = async () => {
         id: doc.id,
         nama: data.nama || "Unknown",
         hargaReferensi: data.hargaReferensi || 0,
+        hargabeli: data.hargabeli || 0,
         kategori: data.kategori || "Umum",
       });
     });
@@ -58,22 +59,18 @@ const getProductsData = async () => {
 };
 
 /* ======================================================
-   GET STOCK VALUE PER GUDANG (BERDASARKAN HARGA REFERENSI)
+   GET STOCK VALUE PER GUDANG UNTUK NILAI REFERENSI (HARGA REFERENSI)
 ====================================================== */
-const getStockValue = async () => {
-  try {
-    console.log("📦 Fetching stock data...");
 
-    // Ambil semua roll yang tersedia
+export const getStockValueReference = async () => {
+  try {
+    console.log("📦 Fetching stock data for reference value...");
     const stockQuery = query(
       collection(db, STOCK_ROLLS_COLLECTION),
       where("status", "in", ["AVAILABLE", "OPENED"]),
     );
-
     const stockSnap = await getDocs(stockQuery);
     console.log(`📦 Found ${stockSnap.size} rolls in stock`);
-
-    // Ambil semua produk untuk mendapatkan harga referensi
     const produkMap = await getProductsData();
 
     if (stockSnap.empty) {
@@ -94,12 +91,8 @@ const getStockValue = async () => {
     stockSnap.forEach((doc) => {
       const data = doc.data();
       const berat = data.berat_sisa || 0;
-
-      // Ambil harga referensi dari produk
       const produk = produkMap.get(data.produk_id);
       const hargaReferensi = produk?.hargaReferensi || 0;
-
-      // Hitung nilai stok berdasarkan harga referensi
       const nilaiRoll = hargaReferensi * berat;
 
       totalRol += 1;
@@ -133,8 +126,14 @@ const getStockValue = async () => {
       g.nilai += nilaiRoll;
     });
 
-    console.log("📊 Stock per Gudang:", Array.from(stockPerGudang.values()));
-    console.log("💰 Total Nilai Stok:", formatRupiah(totalNilaiStok));
+    console.log(
+      "📊 Stock per Gudang (reference):",
+      Array.from(stockPerGudang.values()),
+    );
+    console.log(
+      "💰 Total Nilai Stok (reference):",
+      formatRupiah(totalNilaiStok),
+    );
 
     return {
       totalRol,
@@ -143,7 +142,7 @@ const getStockValue = async () => {
       stockPerGudang: Array.from(stockPerGudang.values()),
     };
   } catch (error) {
-    console.error("❌ Error getting stock value:", error);
+    console.error("❌ Error getting reference stock value:", error);
     return {
       totalRol: 0,
       totalBeratStok: 0,
@@ -153,9 +152,6 @@ const getStockValue = async () => {
   }
 };
 
-/* ======================================================
-   GET WASTE ANALYSIS
-====================================================== */
 const getWasteAnalysis = async (startDate, endDate) => {
   try {
     console.log("🗑️ Fetching waste data...");
@@ -168,6 +164,7 @@ const getWasteAnalysis = async (startDate, endDate) => {
 
     const wasteSnap = await getDocs(wasteQuery);
     console.log(`🗑️ Found ${wasteSnap.size} waste entries`);
+    const produkMap = await getProductsData();
 
     if (wasteSnap.empty) {
       return {
@@ -182,12 +179,20 @@ const getWasteAnalysis = async (startDate, endDate) => {
     const wastePerGudang = new Map();
 
     wasteSnap.forEach((doc) => {
+      // console.log("🗑️ Processing waste entry:", { id: doc.id, ...doc.data() });
       const data = doc.data();
       const berat = data.berat || 0;
       totalWaste += berat;
 
-      // Estimasi nilai waste: Rp 10.000/kg (bisa disesuaikan)
-      const nilaiWaste = berat * 10000;
+      // Hitung nilai waste berdasarkan harga referensi produk
+      const produk = produkMap.get(data.produk_id);
+      const hargaReferensi = produk?.hargaReferensi || 0;
+      console.log(
+        `🗑️ Waste berat: ${berat} kg, Harga referensi: ${formatRupiah(
+          hargaReferensi,
+        )} docId: ${doc.id}`,
+      );
+      const nilaiWaste = berat * hargaReferensi;
       totalNilaiWaste += nilaiWaste;
 
       const gudangId = data.gudang_id || "unknown";
@@ -240,8 +245,8 @@ const calculateCOGS = (transactions, produkMap) => {
   transactions.forEach((t) => {
     t.items?.forEach((item) => {
       const produk = produkMap.get(item.produkId);
-      // Gunakan harga referensi sebagai modal
-      const hargaModal = produk?.hargaReferensi || item.harga_per_kg * 0.7;
+      // Gunakan harga beli sebagai modal
+      const hargaModal = produk?.hargabeli || item.harga_per_kg * 0.7;
       const berat =
         item.tipe === "ROL" ? item.berat || 0 : item.berat_jual || 0;
       cogs += hargaModal * berat;
@@ -321,7 +326,7 @@ export const getSalesReport = async (startDate, endDate) => {
         ),
       ),
       getProductsData(),
-      getStockValue(),
+      getStockValueReference(),
     ]);
 
     console.log("📦 Stock data:", {

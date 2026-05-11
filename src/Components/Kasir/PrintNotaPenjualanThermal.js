@@ -46,7 +46,7 @@ const printNotaPenjualanThermal = (data) => {
   // THERMAL HELPER (ESC/POS LOOK)
   // ===========================
 
-  const MAX = 38;
+  const MAX = 42;
   const line = "-".repeat(MAX);
 
   const right = (label, value) => {
@@ -201,7 +201,7 @@ const printNotaPenjualanThermal = (data) => {
   out += line + "\n";
 
   /* ===== FOOTER ===== */
-  out += center("Terima Kasih") + "\n\n";
+  out += center("Terima Kasih") + "\n\n\n\n";
 
   // ===========================
   // FINAL HTML (PURE THERMAL)
@@ -224,12 +224,16 @@ body {
     
 pre {
       font-family: "Courier New", Courier, monospace;
-      font-size: 10.5px;
+      font-size: 10px;
+      font-weight: 550;
       line-height: 1.25;
       white-space: pre;
       word-break: keep-all;
       overflow-wrap: normal;
-      padding: 2mm 4mm;
+      padding-top: 4mm;
+      padding-bottom: 4mm;
+      padding-left: 0mm;
+      padding-right: 8mm;
       box-sizing: border-box;
       font-variant-ligatures: none;
       -webkit-print-color-adjust: exact;

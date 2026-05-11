@@ -397,7 +397,7 @@ export default function LoginPage() {
           <div className="mt-8 pt-6 border-t border-white/20 text-center">
             <div className="flex items-center justify-center gap-2">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs opacity-70">Sistem online • v5.1</span>
+              <span className="text-xs opacity-70">Sistem online • v5.2</span>
             </div>
             <p className="text-xs opacity-60 mt-4">
               © {new Date().getFullYear()} StockKain Management System

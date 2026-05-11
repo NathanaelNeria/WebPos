@@ -436,7 +436,7 @@ export default function Sidebar() {
         <div className="text-[10px] text-white/30 space-y-1">
           <div className="flex items-center justify-center gap-2">
             <span className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></span>
-            <span>v5.1 Production</span>
+            <span>v5.2 Production</span>
           </div>
           <div className="text-[8px] text-white/20">© 2026 KaineWare</div>
         </div>
