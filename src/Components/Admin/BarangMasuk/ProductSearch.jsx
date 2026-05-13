@@ -1,5 +1,6 @@
 // Components/BarangMasuk/ProductSearch.jsx
 import { Search, Package, Plus } from "lucide-react";
+import { useRef, useEffect } from "react";
 
 export default function ProductSearch({
   search,
@@ -10,8 +11,23 @@ export default function ProductSearch({
   filteredProduk,
   onAddProduk,
 }) {
+  const containerRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setShowSearch(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="relative bg-white rounded-xl shadow-soft border border-gray-100 p-6">
+    <div ref={containerRef} className="relative bg-white rounded-xl shadow-soft border border-gray-100 p-6">
       <label className="font-medium text-sm text-gray-700 mb-1 block">
         Cari & Tambah Produk <span className="text-red-500">*</span>
       </label>

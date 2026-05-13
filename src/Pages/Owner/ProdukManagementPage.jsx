@@ -210,14 +210,15 @@ export default function ProdukManagementPage() {
   useEffect(() => {
     let filtered = [...produk];
 
-    // Filter by search term
+    // Filter by search term (supports multiple words across name, category, or code)
     if (search.trim()) {
-      const searchTerm = search.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item?.nama?.toLowerCase().includes(searchTerm) ||
-          item?.kategori?.toLowerCase().includes(searchTerm) ||
-          item?.kode?.toLowerCase().includes(searchTerm),
+      const terms = search.trim().toLowerCase().split(/\s+/);
+      filtered = filtered.filter((item) =>
+        terms.every((term) =>
+          item?.nama?.toLowerCase().includes(term) ||
+          item?.kategori?.toLowerCase().includes(term) ||
+          item?.kode?.toLowerCase().includes(term),
+        ),
       );
     }
 

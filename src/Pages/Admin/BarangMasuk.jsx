@@ -133,11 +133,12 @@ export default function BarangMasuk() {
   };
 
   const filteredProduk = produkList.filter((p) => {
-    const q = search.toLowerCase();
-    return (
-      p.nama?.toLowerCase().includes(q) ||
-      p.kode?.toLowerCase().includes(q) ||
-      p.kategori?.toLowerCase().includes(q)
+    if (!search.trim()) return true;
+    const terms = search.trim().toLowerCase().split(/\s+/);
+    return terms.every((term) =>
+      p.nama?.toLowerCase().includes(term) ||
+      p.kode?.toLowerCase().includes(term) ||
+      p.kategori?.toLowerCase().includes(term)
     );
   });
 
