@@ -19,7 +19,8 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
   const [hargaProduk, setHargaProduk] = useState({});
   const [ongkir, setOngkir] = useState(0);
   const [metodePembayaran, setMetodePembayaran] = useState("");
-  const [potongan, setPotongan] = useState(0);
+  const [buyerName, setBuyerName] = useState("");
+  const [potongan, setPotongan] = useState("");
 
   const itemsPerPage = 5;
   const { user } = useAuth();
@@ -46,8 +47,8 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
   }, [invoiceData]);
 
   useEffect(() => {
-    if (selectedRow?.metode_pembayaran) {
-      setMetodePembayaran(selectedRow.metode_pembayaran);
+    if (selectedRow?.customer?.nama) {
+      setBuyerName(selectedRow.customer.nama);
     }
   }, [selectedRow]);
 
@@ -246,6 +247,32 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
     }));
   };
 
+  const handleBuyerUpdate = async () => {
+    if (!selectedRow) return;
+    try {
+      const ref = doc(db, "transaksiPenjualan", selectedRow.id);
+      await updateDoc(ref, { "customer.nama": buyerName });
+      setSelectedRow((prev) => ({
+        ...prev,
+        customer: { ...(prev.customer || {}), nama: buyerName },
+      }));
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Nama pembeli diperbarui",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("❌ Error updating buyer name:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Tidak dapat memperbarui nama pembeli",
+      });
+    }
+  };
+
   const handleSaveHarga = async () => {
     if (!selectedRow) return;
 
@@ -256,7 +283,6 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
         Swal.showLoading();
       },
     });
-
     try {
       const updatedItems = selectedRow.items.map((item) => {
         const kategori = item.kategori || "TANPA KATEGORI";
@@ -527,7 +553,20 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
                       <strong>No. Invoice:</strong> {selectedRow.nomor_nota}
                     </p>
                     <p>
-                      <strong>Pembeli:</strong> {selectedRow.customer?.nama}
+                      <strong>Pembeli:</strong>{" "}
+                      <input
+                        type="text"
+                        className="border rounded px-2 py-1 text-sm ml-2"
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                        placeholder="Nama pembeli"
+                      />{" "}
+                      <button
+                        onClick={handleBuyerUpdate}
+                        className="ml-2 bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-sm"
+                      >
+                        Update
+                      </button>
                     </p>
                     <p>
                       <strong>Total:</strong>{" "}
@@ -557,6 +596,39 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
                     </p>
                     <p>
                       <strong>Status:</strong> {selectedRow.status_owner}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const ref = doc(
+                              db,
+                              "transaksiPenjualan",
+                              selectedRow.id,
+                            );
+                            await updateDoc(ref, { status_owner: "VOID" });
+                            setSelectedRow((prev) => ({
+                              ...prev,
+                              status_owner: "VOID",
+                            }));
+                            Swal.fire({
+                              icon: "success",
+                              title: "Berhasil",
+                              text: "Nota di-void",
+                              timer: 1500,
+                              showConfirmButton: false,
+                            });
+                          } catch (err) {
+                            console.error("❌ Error voiding note:", err);
+                            Swal.fire({
+                              icon: "error",
+                              title: "Gagal",
+                              text: "Tidak dapat void nota",
+                            });
+                          }
+                        }}
+                        className="ml-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm"
+                      >
+                        Void
+                      </button>
                     </p>
                     {selectedRow &&
                     selectedRow.items &&
