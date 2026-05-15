@@ -51,6 +51,7 @@ const MutasiGudang = lazy(() => import("../Pages/Admin/MutasiGudang"));
 const DashboardKasir = lazy(() => import("../Pages/Kasir/DashboardKasir"));
 const Penjualan = lazy(() => import("../Pages/Kasir/Penjualan"));
 const RiwayatTransaksi = lazy(() => import("../Pages/Kasir/RiwayatTransaksi"));
+const Retur = lazy(() => import("../Pages/Kasir/Retur"));
 
 // ================= ERROR PAGES =================
 function UnauthorizedPage() {
@@ -431,6 +432,14 @@ export const routeConfig = [
     kasirOnly: true,
     title: "Riwayat Transaksi",
     icon: "History",
+  },
+  {
+    path: "/Kasir/retur",
+    element: <Retur />,
+    allowedRoles: ["kasir", "admin", "owner"],
+    kasirOnly: true,
+    title: "Retur",
+    icon: "RefreshCw",
   },
 ];
 

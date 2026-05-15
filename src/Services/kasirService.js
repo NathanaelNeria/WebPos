@@ -160,6 +160,49 @@ export const getMultipleProduk = async (produkIds) => {
 };
 
 /* ======================================================
+   VALIDASI ROLL UNTUK RETUR
+   - Hanya cek status SOLD
+   - Gudang dari mana saja tidak masalah
+====================================================== */
+export const validateReturnRoll = async (barcode) => {
+  try {
+    const cleanBarcode = parseBarcode(barcode);
+    if (!cleanBarcode) {
+      return { valid: false, message: "❌ Barcode tidak valid" };
+    }
+
+    const rollQuery = query(
+      collection(db, "stockRolls"),
+      where("kode_barcode", "==", cleanBarcode),
+      limit(1),
+    );
+    const rollSnap = await getDocs(rollQuery);
+
+    if (rollSnap.empty) {
+      return { valid: false, message: "❌ Roll tidak ditemukan" };
+    }
+
+    const rollDoc = rollSnap.docs[0];
+    const rollData = rollDoc.data();
+    const roll = { id: rollDoc.id, ...rollData };
+    console.log("Validasi retur - roll ditemukan:", roll);
+
+    // Hanya validasi status SOLD
+    if (roll.status !== STATUS_ROLL.SOLD) {
+      return {
+        valid: false,
+        message: `❌ Status roll: ${roll.status}. Hanya roll SOLD yang dapat diretur.`,
+      };
+    }
+
+    return { valid: true, roll };
+  } catch (error) {
+    console.error("Error validating return roll:", error);
+    return { valid: false, message: "❌ Error saat validasi roll" };
+  }
+};
+
+/* ======================================================
    VALIDASI ROLL
 ====================================================== */
 export const validateRollForCart = async (barcode, gudangId) => {
