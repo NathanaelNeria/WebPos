@@ -21,7 +21,7 @@ const SearchBar = forwardRef(
       onSearchKeyPress,
       onClearSearch,
       showDropdown,
-      setshowDropdown,
+      setShowDropdown,
       searchResults,
       onSelectResult,
     },
@@ -40,7 +40,7 @@ const SearchBar = forwardRef(
             value={searchTerm}
             onChange={onSearchChange}
             onKeyPress={onSearchKeyPress}
-            onFocus={() => searchTerm.trim() && setshowDropdown(true)}
+            onFocus={() => searchTerm.trim() && setShowDropdown(true)}
             autoComplete="off"
           />
           <Search

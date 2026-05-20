@@ -20,7 +20,8 @@ import {
   Activity,
   AlertCircle,
   Building,
-  Contact2, RefreshCw,
+  Contact2,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 
@@ -239,6 +240,7 @@ export default function Sidebar() {
       path: "/Kasir/retur",
       icon: RefreshCw,
       description: "Return barang",
+      // disabled: true,
     },
   ];
 
@@ -278,8 +280,10 @@ export default function Sidebar() {
         {menus.map((menu) => {
           const Icon = menu.icon;
 
-          let isDisabled = disabled;
-          let customTitle = menu.description;
+          let isDisabled = disabled || menu.disabled;
+          let customTitle = menu.disabled
+            ? "Menu dalam pengerjaan"
+            : menu.description;
 
           if (title === "KASIR" && isCideng) {
             isDisabled = true;

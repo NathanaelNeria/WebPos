@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo, Fragment } from "react";
 import ReactPaginate from "react-paginate";
 import { Dialog, Transition } from "@headlessui/react";
-import UpdateItemFirestore from "../../Utils/updateItemFirestore";
 import { db } from "../../Services/firebase";
-import { updateDoc, collection, doc, getDoc } from "firebase/firestore";
+import { updateDoc, doc, getDoc } from "firebase/firestore";
 import { formatCurrency } from "../../Utils/formatCurrency";
 import { formatWeight } from "../../Utils/formatters";
 import { STATUS_OWNER } from "../../Services/kasirService";
@@ -49,6 +48,14 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
   useEffect(() => {
     if (selectedRow?.customer?.nama) {
       setBuyerName(selectedRow.customer.nama);
+    }
+  }, [selectedRow]);
+
+  useEffect(() => {
+    if (selectedRow?.metode_pembayaran) {
+      setMetodePembayaran(selectedRow.metode_pembayaran);
+    } else {
+      setMetodePembayaran("");
     }
   }, [selectedRow]);
 
@@ -108,6 +115,9 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
         case "LUNAS":
           return "bg-green-100 text-green-700";
 
+        case "VOID":
+          return "bg-black text-white";
+
         default:
           return "bg-gray-100 text-gray-600";
       }
@@ -115,12 +125,14 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
 
     if (type === "metode") {
       switch (value) {
-        case "TUNAI":
-          return "bg-red-100 text-red-600";
+        case "CASH":
+          return "bg-gray-100 text-gray-600";
         case "TRANSFER":
           return "bg-blue-100 text-blue-600";
         case "TEMPO":
           return "bg-yellow-100 text-yellow-700";
+        case "CARD":
+          return "bg-purple-100 text-purple-700";
         default:
           return "bg-gray-100 text-gray-600";
       }
@@ -129,11 +141,6 @@ const TabelTransaksi = ({ page, invoiceData, loading }) => {
 
   const handleCheckboxChange = async (row, role, value) => {
     const ref = doc(db, "transaksiPenjualan", row.id);
-
-    //false-false PENDING
-    //false-true APPROVED
-    //true-false APPROVED (tapi bisa diubah lagi jadi PENDING)
-    //true-true COMPLETED (final, tidak bisa diubah lagi)
 
     try {
       const updatedApproved = {

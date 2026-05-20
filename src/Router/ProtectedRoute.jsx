@@ -34,16 +34,16 @@ export default function ProtectedRoute({
   // Debug logging - hanya di development
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
-      console.log("🔐 ProtectedRoute Check:", {
-        path: location.pathname,
-        user: currentUser?.email,
-        primaryRole: userPrimaryRole,
-        allowedRoles,
-        loading,
-        isCreating,
-        kasirOnly,
-        activeGudangId,
-      });
+      // console.log("🔐 ProtectedRoute Check:", {
+      //   path: location.pathname,
+      //   user: currentUser?.email,
+      //   primaryRole: userPrimaryRole,
+      //   allowedRoles,
+      //   loading,
+      //   isCreating,
+      //   kasirOnly,
+      //   activeGudangId,
+      // });
     }
   }, [
     location.pathname,
@@ -150,13 +150,13 @@ export default function ProtectedRoute({
     const canAccessKasir = isKasir || isOwner || isAdmin;
 
     if (!canAccessKasir) {
-      console.warn("❌ User bukan kasir/owner/admin, akses ditolak");
+      // console.warn("❌ User bukan kasir/owner/admin, akses ditolak");
       return <Navigate to="/unauthorized" replace />;
     }
 
     // Jika user adalah owner/admin, langsung izinkan
     if (isOwner || isAdmin) {
-      console.log("✅ Owner/Admin access to kasir page granted");
+      // console.log("✅ Owner/Admin access to kasir page granted");
       return children;
     }
 
@@ -259,6 +259,6 @@ export default function ProtectedRoute({
     }
   }
 
-  console.log("✅ Access granted to:", location.pathname);
+  // console.log("✅ Access granted to:", location.pathname);
   return children;
 }

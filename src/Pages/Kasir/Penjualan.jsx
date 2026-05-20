@@ -385,6 +385,69 @@ export default function Penjualan() {
       return;
     }
 
+    // DEBUG LOG
+    console.log("=== DEBUG ADD TO CART ===");
+    console.log("Roll data:", {
+      id: roll.id,
+      produkNama: roll.produk_nama,
+      kategori: roll.kategori,
+      group: roll.group,
+      harga_jual: roll.harga_jual,
+      harga_referensi: roll.harga_referensi,
+      tambahanHargaEcer: roll.tambahanHargaEcer,
+    });
+
+    // Normalize kategori and group for consistent comparison
+    const normalizedKategori = String(roll.kategori || "").trim();
+    const normalizedGroup = String(roll.group || "-").trim();
+
+    console.log("Normalized values:", {
+      normalizedKategori,
+      normalizedGroup,
+    });
+
+    // Check if there are existing items with same group and category to get updated price
+    const existingItemWithSameGroup = cart.find((item) => {
+      const itemKategori = String(item.kategori || "").trim();
+      const itemGroup = String(item.group || "").trim();
+      return (
+        itemKategori === normalizedKategori && itemGroup === normalizedGroup
+      );
+    });
+
+    console.log(
+      "Existing items with same group and category:",
+      cart
+        .filter((item) => {
+          const itemKategori = String(item.kategori || "").trim();
+          const itemGroup = String(item.group || "").trim();
+          return (
+            itemKategori === normalizedKategori && itemGroup === normalizedGroup
+          );
+        })
+        .map((item) => ({
+          id: item.id,
+          produkNama: item.produkNama,
+          kategori: item.kategori,
+          group: item.group,
+          harga_per_kg: item.harga_per_kg,
+        })),
+    );
+
+    // Use updated price if exists, otherwise use original price
+    const hargaJualUpdated = existingItemWithSameGroup?.harga_per_kg;
+    const hargaBase =
+      hargaJualUpdated || roll.harga_jual || roll.harga_referensi || 0;
+    const hargaReferensi = roll.harga_referensi || 0;
+    const tambahanEcer = roll.tambahanHargaEcer || 0;
+
+    console.log("Price calculation:", {
+      hargaJualUpdated,
+      hargaBase,
+      hargaReferensi,
+      tambahanEcer,
+    });
+
     const newItem = {
       id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       rollId: roll.id,
@@ -392,15 +455,14 @@ export default function Penjualan() {
       produkId: roll.produk_id,
       produkNama: roll.produk_nama || "Unknown",
       kategori: roll.kategori,
-      harga_referensi: roll.harga_referensi || 0,
+      harga_referensi: hargaReferensi,
       group: roll.group || "-",
-      harga_per_kg: roll.harga_jual || roll.harga_referensi || 0,
+      harga_per_kg: hargaBase,
     };
 
-    const hargaReferensi = roll.harga_referensi || 0;
-    const tambahanEcer = roll.tambahanHargaEcer || 0;
-
-    const hargaEcer = hargaReferensi + tambahanEcer;
+    const hargaEcer = existingItemWithSameGroup
+      ? hargaBase
+      : hargaBase + tambahanEcer;
 
     if (tipe === TIPE_ITEM.ROL) {
       setCart((prev) => [
@@ -409,8 +471,7 @@ export default function Penjualan() {
           ...newItem,
           tipe: TIPE_ITEM.ROL,
           berat: roll.berat_sisa,
-          subtotal:
-            roll.berat_sisa * (roll.harga_jual || roll.harga_referensi || 0),
+          subtotal: roll.berat_sisa * hargaBase,
         },
       ]);
 
@@ -500,16 +561,71 @@ export default function Penjualan() {
 
       const { kategori, group, tipe } = triggerItem;
 
+      // DEBUG LOG
+      console.log("=== DEBUG UPDATE HARGA ===");
+      console.log("Trigger Item:", {
+        id: triggerItem.id,
+        produkNama: triggerItem.produkNama,
+        kategori: triggerItem.kategori,
+        group: triggerItem.group,
+        tipe: triggerItem.tipe,
+        harga_per_kg: triggerItem.harga_per_kg,
+      });
+
+      // Normalize kategori and group for consistent comparison
+      const normalizedKategori = String(kategori || "").trim();
+      const normalizedGroup = String(group || "").trim();
+
+      console.log("Normalized values:", {
+        normalizedKategori,
+        normalizedGroup,
+      });
+
+      console.log(
+        "All cart items before update:",
+        prev.map((item) => ({
+          id: item.id,
+          produkNama: item.produkNama,
+          kategori: item.kategori,
+          group: item.group,
+          tipe: item.tipe,
+          normalizedKategori: String(item.kategori || "").trim(),
+          normalizedGroup: String(item.group || "").trim(),
+          harga_per_kg: item.harga_per_kg,
+        })),
+      );
+
+      console.log("New harga:", hargaBaru);
+
       // =========================
       // ✅ JIKA ECER DIUBAH
       // → hanya ECER dalam grup
       // =========================
       if (tipe === "ECER") {
-        return prev.map((item) => {
+        const updatedCart = prev.map((item) => {
+          const itemKategori = String(item.kategori || "").trim();
+          const itemGroup = String(item.group || "").trim();
+
+          const isMatch =
+            item.tipe === "ECER" &&
+            itemKategori === normalizedKategori &&
+            itemGroup === normalizedGroup;
+
+          if (isMatch) {
+            console.log("✅ ECER Item will be updated:", {
+              id: item.id,
+              produkNama: item.produkNama,
+              kategori: item.kategori,
+              group: item.group,
+              oldHarga: item.harga_per_kg,
+              newHarga: hargaBaru,
+            });
+          }
+
           if (
             item.tipe !== "ECER" ||
-            item.kategori !== kategori ||
-            item.group !== group
+            itemKategori !== normalizedKategori ||
+            itemGroup !== normalizedGroup
           ) {
             return item;
           }
@@ -520,6 +636,19 @@ export default function Penjualan() {
             subtotal: hargaBaru * (item.berat_jual || 0),
           };
         });
+
+        console.log(
+          "ECER Update - Cart after update:",
+          updatedCart.map((item) => ({
+            id: item.id,
+            produkNama: item.produkNama,
+            kategori: item.kategori,
+            group: item.group,
+            harga_per_kg: item.harga_per_kg,
+          })),
+        );
+
+        return updatedCart;
       }
 
       // =========================
@@ -528,8 +657,32 @@ export default function Penjualan() {
       // =========================
       const hargaRollBaru = hargaBaru;
 
-      return prev.map((item) => {
-        if (item.kategori !== kategori || item.group !== group) {
+      const updatedCart = prev.map((item) => {
+        const itemKategori = String(item.kategori || "").trim();
+        const itemGroup = String(item.group || "").trim();
+
+        const isMatch =
+          itemKategori === normalizedKategori && itemGroup === normalizedGroup;
+
+        if (isMatch) {
+          console.log("✅ ROLL Item will be updated:", {
+            id: item.id,
+            produkNama: item.produkNama,
+            kategori: item.kategori,
+            group: item.group,
+            tipe: item.tipe,
+            oldHarga: item.harga_per_kg,
+            newHarga:
+              item.tipe === "ECER"
+                ? hargaRollBaru + (item.tambahanHargaEcer || 0)
+                : hargaRollBaru,
+          });
+        }
+
+        if (
+          itemKategori !== normalizedKategori ||
+          itemGroup !== normalizedGroup
+        ) {
           return item;
         }
 
@@ -547,6 +700,20 @@ export default function Penjualan() {
           subtotal: hargaPerKgBaru * berat,
         };
       });
+
+      console.log(
+        "ROLL Update - Cart after update:",
+        updatedCart.map((item) => ({
+          id: item.id,
+          produkNama: item.produkNama,
+          kategori: item.kategori,
+          group: item.group,
+          tipe: item.tipe,
+          harga_per_kg: item.harga_per_kg,
+        })),
+      );
+
+      return updatedCart;
     });
   };
 
@@ -931,8 +1098,6 @@ export default function Penjualan() {
             (item) =>
               item.rollId === selectedRoll.id && item.tipe === TIPE_ITEM.ECER,
           );
-
-          console.log("berat neto dari waste input:", beratNeto);
 
           addToCart(
             selectedRoll,

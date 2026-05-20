@@ -139,6 +139,10 @@ export const getProdukById = async (produkId) => {
 export const getMultipleProduk = async (produkIds) => {
   try {
     if (!produkIds?.length) return new Map();
+
+    console.log("=== DEBUG GET MULTIPLE PRODUK ===");
+    console.log("Fetching produk IDs:", produkIds);
+
     const produkMap = new Map();
 
     for (let i = 0; i < produkIds.length; i += 10) {
@@ -152,6 +156,22 @@ export const getMultipleProduk = async (produkIds) => {
         produkMap.set(doc.id, { id: doc.id, ...doc.data() });
       });
     }
+
+    console.log("Total produk fetched:", produkMap.size);
+    console.log(
+      "Sample produk data (first 3):",
+      Array.from(produkMap.entries())
+        .slice(0, 3)
+        .map(([id, data]) => ({
+          id,
+          nama: data.nama,
+          kategori: data.kategori,
+          group: data.group,
+          hargaReferensi: data.hargaReferensi,
+          tambahanHargaEcer: data.tambahanHargaEcer,
+        })),
+    );
+
     return produkMap;
   } catch (error) {
     console.error("Error getting multiple produk:", error);
@@ -160,9 +180,50 @@ export const getMultipleProduk = async (produkIds) => {
 };
 
 /* ======================================================
+   HELPER: FETCH TRANSACTION BY NOTA NUMBER
+====================================================== */
+const fetchTransactionByNota = async (notaNumber) => {
+  try {
+    if (!notaNumber) return null;
+
+    // Query nota collection to get transaksi_id
+    const notaRef = doc(db, "nota", notaNumber);
+    const notaSnap = await getDoc(notaRef);
+
+    if (!notaSnap.exists()) {
+      console.log("Nota tidak ditemukan:", notaNumber);
+      return null;
+    }
+
+    const notaData = notaSnap.data();
+    const transaksiId = notaData.transaksi_id;
+
+    if (!transaksiId) {
+      console.log("Transaksi ID tidak ditemukan di nota:", notaNumber);
+      return null;
+    }
+
+    // Fetch transaction document
+    const transaksiRef = doc(db, "transaksiPenjualan", transaksiId);
+    const transaksiSnap = await getDoc(transaksiRef);
+
+    if (!transaksiSnap.exists()) {
+      console.log("Transaksi tidak ditemukan:", transaksiId);
+      return null;
+    }
+
+    return transaksiSnap.data();
+  } catch (error) {
+    console.error("Error fetching transaction by nota:", error);
+    return null;
+  }
+};
+
+/* ======================================================
    VALIDASI ROLL UNTUK RETUR
    - Hanya cek status SOLD
    - Gudang dari mana saja tidak masalah
+   - Fetch data transaksi untuk mendapatkan berat terjual
 ====================================================== */
 export const validateReturnRoll = async (barcode) => {
   try {
@@ -195,10 +256,218 @@ export const validateReturnRoll = async (barcode) => {
       };
     }
 
-    return { valid: true, roll };
+    // Fetch transaction data to get sold weight and price
+    let beratTerjual = 0;
+    let tipePenjualan = null;
+    let hargaReferensi = 0;
+    let hargaJualTerakhir = roll.harga_jual_terakhir || 0;
+    let hargaPerKg = 0;
+
+    if (roll.nota_terakhir) {
+      const transaksiData = await fetchTransactionByNota(roll.nota_terakhir);
+
+      if (transaksiData && transaksiData.items) {
+        // Find the item in transaction matching this roll
+        const transactionItem = transaksiData.items.find(
+          (item) => item.rollId === roll.id,
+        );
+
+        if (transactionItem) {
+          tipePenjualan = transactionItem.tipe;
+          if (tipePenjualan === TIPE_ITEM.ROL) {
+            beratTerjual = transactionItem.berat || 0;
+          } else if (tipePenjualan === TIPE_ITEM.ECER) {
+            beratTerjual = transactionItem.berat_jual || 0;
+          }
+          hargaReferensi = transactionItem.harga_referensi || 0;
+          hargaPerKg = transactionItem.harga_per_kg || 0;
+          console.log(
+            "Berat terjual dari transaksi:",
+            beratTerjual,
+            "tipe:",
+            tipePenjualan,
+            "harga:",
+            hargaPerKg,
+          );
+        }
+      }
+    }
+
+    // Fetch product data if available
+    let produkData = {};
+    let tambahanHargaEcer = roll.tambahanHargaEcer || 0;
+
+    if (roll.produk_id) {
+      const produk = await getProdukById(roll.produk_id);
+      if (produk) {
+        produkData = produk;
+        if (!hargaReferensi) {
+          hargaReferensi =
+            produk.hargaReferensi || produk.harga_referensi_jual || 0;
+        }
+        tambahanHargaEcer = produk.tambahanHargaEcer || 0;
+      }
+    }
+
+    // Return complete roll data with sold weight and price
+    return {
+      valid: true,
+      roll: {
+        id: roll.id,
+        kode_barcode: roll.kode_barcode || roll.id,
+        produk_id: roll.produk_id,
+        produk_nama: roll.produk_nama || produkData.nama || "Unknown",
+        kategori: roll.kategori || produkData.kategori || "Umum",
+        berat_sisa: roll.berat_sisa || 0,
+        berat_awal: roll.berat_awal || roll.berat_sisa || 0,
+        status: roll.status,
+        gudang_id: roll.gudang_id,
+        is_rol_dibuka: roll.is_rol_dibuka || false,
+        supplier_id: roll.supplier_id,
+        supplier_nama: roll.supplier_nama,
+        lokasi_rak: roll.lokasi_rak,
+        nota_terakhir: roll.nota_terakhir,
+        harga_referensi: hargaReferensi,
+        harga_jual: hargaJualTerakhir,
+        harga_per_kg: hargaPerKg,
+        max_berat: roll.berat_awal || roll.berat_sisa || 0,
+        tambahanHargaEcer: tambahanHargaEcer,
+        produk_data: produkData,
+        berat_terjual: beratTerjual,
+        tipe_penjualan: tipePenjualan,
+      },
+    };
   } catch (error) {
     console.error("Error validating return roll:", error);
     return { valid: false, message: "❌ Error saat validasi roll" };
+  }
+};
+
+/* ======================================================
+   GET ALL ROLLS FROM NOTA FOR RETUR
+====================================================== */
+export const getRollsFromNota = async (notaNumber) => {
+  try {
+    if (!notaNumber) {
+      return { valid: false, message: "❌ Nomor nota tidak valid" };
+    }
+
+    // Fetch transaction data
+    const transaksiData = await fetchTransactionByNota(notaNumber);
+
+    if (!transaksiData) {
+      return { valid: false, message: "❌ Transaksi tidak ditemukan" };
+    }
+
+    if (!transaksiData.items || transaksiData.items.length === 0) {
+      return { valid: false, message: "❌ Tidak ada item dalam transaksi" };
+    }
+
+    const rolls = [];
+    const skippedRolls = [];
+
+    // Process each item in the transaction
+    for (const item of transaksiData.items) {
+      if (!item.rollId) continue;
+
+      // Fetch roll data
+      const rollRef = doc(db, "stockRolls", item.rollId);
+      const rollSnap = await getDoc(rollRef);
+
+      if (!rollSnap.exists()) {
+        skippedRolls.push({
+          rollId: item.rollId,
+          reason: "Roll tidak ditemukan",
+        });
+        continue;
+      }
+
+      const rollData = rollSnap.data();
+      const roll = { id: rollSnap.id, ...rollData };
+
+      // Only include SOLD rolls
+      if (roll.status !== STATUS_ROLL.SOLD) {
+        skippedRolls.push({
+          rollId: item.rollId,
+          barcode: roll.kode_barcode,
+          reason: `Status roll: ${roll.status} (bukan SOLD)`,
+        });
+        continue;
+      }
+
+      // Get sold weight and price from transaction item
+      let beratTerjual = 0;
+      let tipePenjualan = item.tipe;
+      let hargaReferensi = item.harga_referensi || 0;
+      let hargaJualTerakhir = roll.harga_jual_terakhir || 0;
+      let hargaPerKg = item.harga_per_kg || 0;
+
+      if (tipePenjualan === TIPE_ITEM.ROL) {
+        beratTerjual = item.berat || 0;
+      } else if (tipePenjualan === TIPE_ITEM.ECER) {
+        beratTerjual = item.berat_jual || 0;
+      }
+
+      // Fetch product data if available
+      let produkData = {};
+      let tambahanHargaEcer = roll.tambahanHargaEcer || 0;
+
+      if (roll.produk_id) {
+        const produk = await getProdukById(roll.produk_id);
+        if (produk) {
+          produkData = produk;
+          if (!hargaReferensi) {
+            hargaReferensi =
+              produk.hargaReferensi || produk.harga_referensi_jual || 0;
+          }
+          tambahanHargaEcer = produk.tambahanHargaEcer || 0;
+        }
+      }
+
+      // Add to rolls array
+      rolls.push({
+        id: roll.id,
+        kode_barcode: roll.kode_barcode || roll.id,
+        produk_id: roll.produk_id,
+        produk_nama: roll.produk_nama || produkData.nama || "Unknown",
+        kategori: roll.kategori || produkData.kategori || "Umum",
+        berat_sisa: roll.berat_sisa || 0,
+        berat_awal: roll.berat_awal || roll.berat_sisa || 0,
+        status: roll.status,
+        gudang_id: roll.gudang_id,
+        is_rol_dibuka: roll.is_rol_dibuka || false,
+        supplier_id: roll.supplier_id,
+        supplier_nama: roll.supplier_nama,
+        lokasi_rak: roll.lokasi_rak,
+        nota_terakhir: roll.nota_terakhir,
+        harga_referensi: hargaReferensi,
+        harga_jual: hargaJualTerakhir,
+        harga_per_kg: hargaPerKg,
+        max_berat: roll.berat_awal || roll.berat_sisa || 0,
+        tambahanHargaEcer: tambahanHargaEcer,
+        produk_data: produkData,
+        berat_terjual: beratTerjual,
+        tipe_penjualan: tipePenjualan,
+      });
+    }
+
+    if (rolls.length === 0) {
+      return {
+        valid: false,
+        message: "❌ Tidak ada roll SOLD yang dapat diretur",
+        skippedRolls,
+      };
+    }
+
+    return {
+      valid: true,
+      rolls,
+      skippedRolls,
+      message: `✅ Berhasil memuat ${rolls.length} roll${skippedRolls.length > 0 ? ` (${skippedRolls.length} dilewati)` : ""}`,
+    };
+  } catch (error) {
+    console.error("Error getting rolls from nota:", error);
+    return { valid: false, message: "❌ Error saat memuat roll dari nota" };
   }
 };
 
@@ -277,6 +546,7 @@ export const validateRollForCart = async (barcode, gudangId) => {
         harga_jual: hargaReferensi,
         max_berat: roll.berat_sisa,
         tambahanHargaEcer: tambahanHargaEcer,
+        group: produkData.group || "-",
       },
     };
   } catch (error) {
@@ -291,6 +561,9 @@ export const validateRollForCart = async (barcode, gudangId) => {
 export const getAvailableRolls = async (gudangId, limitCount = 50) => {
   try {
     if (!gudangId) throw new Error("Gudang ID diperlukan");
+
+    console.log("=== DEBUG GET AVAILABLE ROLLS ===");
+    console.log("Fetching available rolls for gudangId:", gudangId);
 
     const rollQuery = query(
       collection(db, "stockRolls"),
@@ -310,9 +583,11 @@ export const getAvailableRolls = async (gudangId, limitCount = 50) => {
       ),
     ];
 
+    console.log("Produk IDs to fetch:", produkIds);
+
     const produkMap = await getMultipleProduk(produkIds);
 
-    return rollSnap.docs.map((doc) => {
+    const rolls = rollSnap.docs.map((doc) => {
       const data = doc.data();
       const produkData = produkMap.get(data.produk_id) || {};
       const hargaReferensi =
@@ -341,6 +616,20 @@ export const getAvailableRolls = async (gudangId, limitCount = 50) => {
         catatan: data.catatan,
       };
     });
+
+    console.log(
+      "Sample roll data (first 3):",
+      rolls.slice(0, 3).map((roll) => ({
+        id: roll.id,
+        produkNama: roll.produk_nama,
+        kategori: roll.kategori,
+        group: roll.group,
+        harga_jual: roll.harga_jual,
+        tambahanHargaEcer: roll.tambahanHargaEcer,
+      })),
+    );
+
+    return rolls;
   } catch (error) {
     console.error("Error getting available rolls:", error);
     throw error;
