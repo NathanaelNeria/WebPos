@@ -30,6 +30,7 @@ yarn-error.log*
 
 # Firebase config & seeder files
 src/services/firebase.js
+src/Services/firebase.js
 src/seeder/
 src/seeder/*
 !src/seeder/README.md  # jika ada file README yang ingin tetap di-track
