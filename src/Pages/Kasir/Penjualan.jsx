@@ -406,12 +406,14 @@ export default function Penjualan() {
       normalizedGroup,
     });
 
-    // Check if there are existing items with same group and category to get updated price
-    const existingItemWithSameGroup = cart.find((item) => {
+    // Check if there are existing ROLL items with same group and category to get updated price
+    const existingRollWithSameGroup = cart.find((item) => {
       const itemKategori = String(item.kategori || "").trim();
       const itemGroup = String(item.group || "").trim();
       return (
-        itemKategori === normalizedKategori && itemGroup === normalizedGroup
+        item.tipe === TIPE_ITEM.ROL &&
+        itemKategori === normalizedKategori &&
+        itemGroup === normalizedGroup
       );
     });
 
@@ -434,8 +436,8 @@ export default function Penjualan() {
         })),
     );
 
-    // Use updated price if exists, otherwise use original price
-    const hargaJualUpdated = existingItemWithSameGroup?.harga_per_kg;
+    // Use updated price from existing ROLL item if exists, otherwise use original price
+    const hargaJualUpdated = existingRollWithSameGroup?.harga_per_kg;
     const hargaBase =
       hargaJualUpdated || roll.harga_jual || roll.harga_referensi || 0;
     const hargaReferensi = roll.harga_referensi || 0;
@@ -460,9 +462,7 @@ export default function Penjualan() {
       harga_per_kg: hargaBase,
     };
 
-    const hargaEcer = existingItemWithSameGroup
-      ? hargaBase
-      : hargaBase + tambahanEcer;
+    const hargaEcer = hargaBase + tambahanEcer;
 
     if (tipe === TIPE_ITEM.ROL) {
       setCart((prev) => [
